@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Checkbox } from "@/components/ui/checkbox"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 
 interface StudentFormMultiStepProps {
@@ -41,6 +42,10 @@ export function StudentFormMultiStep({ onSuccess, onCancel }: StudentFormMultiSt
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   
+  const [useExistingParent, setUseExistingParent] = useState(false)
+  const [existingParents, setExistingParents] = useState<ResponsavelResponse[]>([])
+  const [selectedResponsavelId, setSelectedResponsavelId] = useState<number | null>(null)
+  
   const [responsavelData, setResponsavelData] = useState<ResponsavelData>({
     nome: "",
     cpf: "",
@@ -63,33 +68,61 @@ export function StudentFormMultiStep({ onSuccess, onCancel }: StudentFormMultiSt
 
   useEffect(() => {
     setAuthenticatedRequestFn(makeRequest)
+    loadExistingResponsaveis()
   }, [makeRequest])
+
+  const loadExistingResponsaveis = async () => {
+    try {
+      const parents = await responsaveisService.getAll()
+      setExistingParents(parents)
+    } catch (error) {
+      console.error('Erro ao carregar responsáveis:', error)
+    }
+  }
 
   const handleResponsavelSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsLoading(true)
     setError("")
 
-    const formData = new FormData(e.currentTarget)
-    const data: ResponsavelData = {
-      nome: formData.get("nome") as string,
-      cpf: formData.get("cpf") as string,
-      telefone: formData.get("telefone") as string,
-      email: formData.get("email") as string,
-      endereco: formData.get("endereco") as string,
-    }
-
     try {
-      const responsavel = await responsaveisService.create({
-        ...data,
-        dados_extra: null
-      })
-      
-      setCreatedResponsavel(responsavel)
-      setResponsavelData(data)
-      setCurrentStep(2)
+      if (useExistingParent) {
+        if (!selectedResponsavelId) {
+          setError("Por favor, selecione um responsável existente.")
+          setIsLoading(false)
+          return
+        }
+        
+        const selectedResponsavel = existingParents.find(r => r.id === selectedResponsavelId)
+        if (!selectedResponsavel) {
+          setError("Responsável selecionado não encontrado.")
+          setIsLoading(false)
+          return
+        }
+        
+        setCreatedResponsavel(selectedResponsavel)
+        setCurrentStep(2)
+      } else {
+        const formData = new FormData(e.currentTarget)
+        const data: ResponsavelData = {
+          nome: formData.get("nome") as string,
+          cpf: formData.get("cpf") as string,
+          telefone: formData.get("telefone") as string,
+          email: formData.get("email") as string,
+          endereco: formData.get("endereco") as string,
+        }
+
+        const responsavel = await responsaveisService.create({
+          ...data,
+          dados_extra: null
+        })
+        
+        setCreatedResponsavel(responsavel)
+        setResponsavelData(data)
+        setCurrentStep(2)
+      }
     } catch (err) {
-      setError("Erro ao cadastrar responsável. Verifique os dados e tente novamente.")
+      setError("Erro ao processar responsável. Verifique os dados e tente novamente.")
     } finally {
       setIsLoading(false)
     }
@@ -148,6 +181,9 @@ export function StudentFormMultiStep({ onSuccess, onCancel }: StudentFormMultiSt
   const handleBackToStep1 = () => {
     setCurrentStep(1)
     setError("")
+    setCreatedResponsavel(null)
+    setUseExistingParent(false)
+    setSelectedResponsavelId(null)
     setAlunoData({
       nome: "",
       matricula: "",
@@ -191,64 +227,108 @@ export function StudentFormMultiStep({ onSuccess, onCancel }: StudentFormMultiSt
         {currentStep === 1 ? (
           <form onSubmit={handleResponsavelSubmit} className="space-y-6">
             <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="nome">Nome completo *</Label>
-                  <Input 
-                    id="nome" 
-                    name="nome" 
-                    maxLength={255} 
-                    defaultValue={responsavelData.nome}
-                    required 
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="cpf">CPF *</Label>
-                  <Input 
-                    id="cpf" 
-                    name="cpf" 
-                    maxLength={14}
-                    placeholder="000.000.000-00"
-                    defaultValue={responsavelData.cpf}
-                    required 
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="telefone">Telefone *</Label>
-                  <Input
-                    id="telefone"
-                    name="telefone"
-                    maxLength={20}
-                    placeholder="(11) 99999-9999"
-                    defaultValue={responsavelData.telefone}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email *</Label>
-                  <Input 
-                    id="email" 
-                    name="email" 
-                    type="email" 
-                    maxLength={254}
-                    defaultValue={responsavelData.email}
-                    required 
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="endereco">Endereço completo *</Label>
-                <Input 
-                  id="endereco" 
-                  name="endereco" 
-                  defaultValue={responsavelData.endereco}
-                  required 
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="useExisting" 
+                  checked={useExistingParent}
+                  onCheckedChange={(checked) => {
+                    setUseExistingParent(checked as boolean)
+                    setSelectedResponsavelId(null)
+                    setError("")
+                  }}
                 />
+                <Label htmlFor="useExisting" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                  Vincular a um responsável já cadastrado
+                </Label>
               </div>
+
+              {useExistingParent ? (
+                <div className="space-y-2">
+                  <Label htmlFor="responsavelExistente">Selecionar responsável *</Label>
+                  <Select 
+                    value={selectedResponsavelId?.toString() || ""} 
+                    onValueChange={(value) => setSelectedResponsavelId(Number(value))}
+                    required
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione um responsável" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {existingParents.map((parent) => (
+                        <SelectItem key={parent.id} value={parent.id.toString()}>
+                          {parent.nome} - {parent.cpf}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {existingParents.length === 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      Nenhum responsável encontrado. Desmarque a opção para cadastrar um novo.
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="nome">Nome completo *</Label>
+                      <Input 
+                        id="nome" 
+                        name="nome" 
+                        maxLength={255} 
+                        defaultValue={responsavelData.nome}
+                        required 
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="cpf">CPF *</Label>
+                      <Input 
+                        id="cpf" 
+                        name="cpf" 
+                        maxLength={14}
+                        placeholder="000.000.000-00"
+                        defaultValue={responsavelData.cpf}
+                        required 
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="telefone">Telefone *</Label>
+                      <Input
+                        id="telefone"
+                        name="telefone"
+                        maxLength={20}
+                        placeholder="(11) 99999-9999"
+                        defaultValue={responsavelData.telefone}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email *</Label>
+                      <Input 
+                        id="email" 
+                        name="email" 
+                        type="email" 
+                        maxLength={254}
+                        defaultValue={responsavelData.email}
+                        required 
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="endereco">Endereço completo *</Label>
+                    <Input 
+                      id="endereco" 
+                      name="endereco" 
+                      defaultValue={responsavelData.endereco}
+                      required 
+                    />
+                  </div>
+                </>
+              )}
             </div>
 
             {error && (
@@ -262,7 +342,7 @@ export function StudentFormMultiStep({ onSuccess, onCancel }: StudentFormMultiSt
                 Cancelar
               </Button>
               <Button type="submit" disabled={isLoading} className="cursor-pointer">
-                {isLoading ? "Cadastrando..." : "Próximo"}
+                {isLoading ? (useExistingParent ? "Selecionando..." : "Cadastrando...") : "Próximo"}
                 <ChevronRight className="ml-2 h-4 w-4" />
               </Button>
             </div>

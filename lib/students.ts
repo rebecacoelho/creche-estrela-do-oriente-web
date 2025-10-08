@@ -78,6 +78,29 @@ export const responsaveisService = {
 
     return response.json()
   },
+
+  getAll: async (): Promise<ResponsavelResponse[]> => {
+    if (!authenticatedRequestFn) {
+      console.error('Falha na Autenticação autenticada não configurada')
+      return []
+    }
+
+    try {
+      const response = await authenticatedRequestFn('https://estreladooriente-production.up.railway.app/api/responsaveis/', {
+        method: 'GET',
+      })
+
+      if (!response.ok) {
+        throw new Error('Erro ao buscar responsáveis')
+      }
+
+      const data = await response.json()
+      return Array.isArray(data) ? data : data.results || []
+    } catch (error) {
+      console.error('Erro ao carregar responsáveis:', error)
+      return []
+    }
+  },
 }
 
 export const alunosService = {
