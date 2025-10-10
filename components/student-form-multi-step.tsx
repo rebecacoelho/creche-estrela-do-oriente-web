@@ -236,6 +236,7 @@ export function StudentFormMultiStep({ onSuccess, onCancel }: StudentFormMultiSt
                     setSelectedResponsavelId(null)
                     setError("")
                   }}
+                  className="cursor-pointer"
                 />
                 <Label htmlFor="useExisting" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                   Vincular a um responsável já cadastrado
@@ -450,9 +451,6 @@ export function StudentFormMultiStep({ onSuccess, onCancel }: StudentFormMultiSt
                   onChange={(e) => setAlunoData({ ...alunoData, comprovanteFile: e.target.files?.[0] || null })}
                   required 
                 />
-                <p className="text-sm text-muted-foreground">
-                  Formatos aceitos: PDF, JPG, JPEG, PNG (máximo 10MB)
-                </p>
               </div>
             </div>
 

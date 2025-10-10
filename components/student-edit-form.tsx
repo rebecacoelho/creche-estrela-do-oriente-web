@@ -276,7 +276,7 @@ export function StudentEditForm({ studentId, onSuccess, onCancel }: StudentEditF
                 accept=".pdf,.jpg,.jpeg,.png"
               />
               <p className="text-sm text-muted-foreground">
-                Deixe vazio para manter o comprovante atual. Formatos aceitos: PDF, JPG, JPEG, PNG (máximo 10MB)
+                Deixe vazio para manter o comprovante atual.
               </p>
             </div>
 

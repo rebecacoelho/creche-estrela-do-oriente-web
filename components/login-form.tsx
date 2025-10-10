@@ -54,7 +54,7 @@ export function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4 bg-[url(../public/creche.jpeg)] bg-contain bg-[center_60px] bg-no-repeat">
+    <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4 bg-[url(../public/new-logo.png)] bg-contain bg-[center_60px] bg-no-repeat">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold text-primary">Sistema de Gestão</CardTitle>
