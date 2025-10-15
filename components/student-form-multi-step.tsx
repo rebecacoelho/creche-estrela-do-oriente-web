@@ -210,7 +210,8 @@ export function StudentFormMultiStep({ onSuccess, onCancel }: StudentFormMultiSt
         setCurrentStep(2)
       }
     } catch (err) {
-      setError("Erro ao processar responsável. Verifique os dados e tente novamente.")
+      const errorMessage = err instanceof Error ? err.message : "Erro ao processar responsável. Verifique os dados e tente novamente."
+      setError(errorMessage)
     } finally {
       setIsLoading(false)
     }
