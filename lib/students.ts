@@ -73,25 +73,7 @@ export const responsaveisService = {
     })
 
     if (!response.ok) {
-      let errorMessage = 'Erro ao criar responsável'
-      
-      try {
-        const errorData = await response.json()
-        
-        if (errorData.detail && errorData.detail.includes('Um usuário com este nome de usuário já existe')) {
-          errorMessage = 'Um usuário com este nome de usuário já existe.'
-        } else if (errorData.nome && Array.isArray(errorData.nome) && errorData.nome.some((msg: string) => msg.includes('já existe'))) {
-          errorMessage = 'Um usuário com este nome de usuário já existe.'
-        } else if (errorData.email && Array.isArray(errorData.email) && errorData.email.some((msg: string) => msg.includes('já existe'))) {
-          errorMessage = 'Um usuário com este email já existe.'
-        } else if (errorData.cpf && Array.isArray(errorData.cpf) && errorData.cpf.some((msg: string) => msg.includes('já existe'))) {
-          errorMessage = 'Um usuário com este CPF já existe.'
-        }
-      } catch (parseError) {
-        console.error('Erro ao fazer parse da resposta de erro:', parseError)
-      }
-      
-      throw new Error(errorMessage)
+      throw new Error('Erro ao criar responsável')
     }
 
     return response.json()

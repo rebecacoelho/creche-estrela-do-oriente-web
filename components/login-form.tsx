@@ -12,27 +12,38 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export function LoginForm() {
-  const { login, register, isLoading } = useAuth()
-  const [error, setError] = useState("")
+  const { login, register } = useAuth()
+  const [loginError, setLoginError] = useState("")
+  const [registerError, setRegisterError] = useState("")
   const [success, setSuccess] = useState("")
+  const [activeTab, setActiveTab] = useState("login")
+  const [isLoginLoading, setIsLoginLoading] = useState(false)
+  const [isRegisterLoading, setIsRegisterLoading] = useState(false)
+  
+  const handleTabChange = (value: string) => {
+    setActiveTab(value)
+  }
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    setError("")
+    setLoginError("")
+    setSuccess("")
+    setIsLoginLoading(true)
 
     const formData = new FormData(e.currentTarget)
     const email = formData.get("email") as string
     const password = formData.get("password") as string
 
     const success = await login(email, password)
+    setIsLoginLoading(false)
     if (!success) {
-      setError("Email ou senha incorretos")
+      setLoginError("Email ou senha incorretos")
     }
   }
 
   const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    setError("")
+    setRegisterError("")
     setSuccess("")
 
     const formData = new FormData(e.currentTarget)
@@ -41,14 +52,17 @@ export function LoginForm() {
     const username = email 
   
     if (password.length < 6) {
-      setError("A senha deve ter pelo menos 6 caracteres")
+      setRegisterError("A senha deve ter pelo menos 6 caracteres")
       return
     }
 
-    const success = await register(email, password, username)
-    if (!success) {
-      setError("Erro ao cadastrar usuário. Tente novamente.")
+    setIsRegisterLoading(true)
+    const result = await register(email, password, username)
+    setIsRegisterLoading(false)
+    if (!result.success) {
+      setRegisterError(result.error || "Erro ao cadastrar usuário. Tente novamente.")
     } else {
+      setRegisterError("")
       setSuccess("Conta criada com sucesso!")
     }
   }
@@ -61,7 +75,7 @@ export function LoginForm() {
           <CardDescription>Creche Estrela do Oriente</CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="login" className="w-full">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger className="cursor-pointer" value="login">Entrar</TabsTrigger>
               <TabsTrigger className="cursor-pointer" value="register">Cadastrar</TabsTrigger>
@@ -78,14 +92,14 @@ export function LoginForm() {
                   <Input id="password" name="password" type="password" placeholder="••••••••" required />
                 </div>
 
-                {error && (
+                {loginError && (
                   <Alert variant="destructive">
-                    <AlertDescription>{error}</AlertDescription>
+                    <AlertDescription>{loginError}</AlertDescription>
                   </Alert>
                 )}
 
-                <Button type="submit" className="w-full cursor-pointer" disabled={isLoading}>
-                  {isLoading ? "Entrando..." : "Entrar"}
+                <Button type="submit" className="w-full cursor-pointer" disabled={isLoginLoading}>
+                  {isLoginLoading ? "Entrando..." : "Entrar"}
                 </Button>
 
               </form>
@@ -102,9 +116,9 @@ export function LoginForm() {
                   <Input id="register-password" name="password" type="password" placeholder="••••••••" required />
                 </div>
 
-                {error && (
+                {registerError && (
                   <Alert variant="destructive">
-                    <AlertDescription>{error}</AlertDescription>
+                    <AlertDescription>{registerError}</AlertDescription>
                   </Alert>
                 )}
 
@@ -114,8 +128,8 @@ export function LoginForm() {
                   </Alert>
                 )}
 
-                <Button type="submit" className="w-full cursor-pointer" disabled={isLoading}>
-                  {isLoading ? "Cadastrando..." : "Cadastrar"}
+                <Button type="submit" className="w-full cursor-pointer" disabled={isRegisterLoading}>
+                  {isRegisterLoading ? "Cadastrando..." : "Cadastrar"}
                 </Button>
               </form>
             </TabsContent>

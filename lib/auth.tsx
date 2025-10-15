@@ -17,7 +17,7 @@ interface AuthContextType {
   user: User | null
   tokens: AuthTokens | null
   login: (email: string, password: string) => Promise<boolean>
-  register: (email: string, password: string, username: string) => Promise<boolean>
+  register: (email: string, password: string, username: string) => Promise<{ success: boolean; error?: string }>
   logout: () => void
   refreshToken: () => Promise<boolean>
   isLoading: boolean
@@ -91,7 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     email: string,
     password: string,
     username: string,
-  ): Promise<boolean> => {
+  ): Promise<{ success: boolean; error?: string }> => {
     setIsLoading(true)
 
     try {
@@ -112,30 +112,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         const loginSuccess = await login(email, password)
 
-        const tokensStored = localStorage.getItem("daycare_tokens")
-        const tokenToUse = JSON.parse(tokensStored || "{}")
+        if (loginSuccess) {
+          const tokensStored = localStorage.getItem("daycare_tokens")
+          const tokenToUse = JSON.parse(tokensStored || "{}")
 
-        await fetch(`${API_BASE_URL}/diretores/`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${tokenToUse?.access}`,
-          },
-          body: JSON.stringify({
-            user: data.id,
-          }),
-        })
+          await fetch(`${API_BASE_URL}/diretores/`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${tokenToUse?.access}`,
+            },
+            body: JSON.stringify({
+              user: data.id,
+            }),
+          })
+        }
 
         setIsLoading(false)
-        return loginSuccess
+        return { success: loginSuccess }
       } else {
+        let errorMessage = "Erro ao cadastrar usuário. Tente novamente."
+        
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.username[0]
+
+        } catch (parseError) {
+          console.error('Erro ao fazer parse da resposta de erro:', parseError)
+        }
         setIsLoading(false)
-        return false
+        return { success: false, error: errorMessage }
       }
     } catch (error) {
       console.error("Erro no registro:", error)
       setIsLoading(false)
-      return false
+      return { success: false, error: "Erro ao cadastrar usuário. Tente novamente." }
     }
   }
 
