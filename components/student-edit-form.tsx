@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Switch } from "@/components/ui/switch"
 import { ArrowLeft } from "lucide-react"
+import { generateRegistration } from "@/utils/formatValues"
 
 interface StudentEditFormProps {
   studentId: string
@@ -208,6 +209,11 @@ export function StudentEditForm({ studentId, onSuccess, onCancel }: StudentEditF
                   maxLength={50} 
                   defaultValue={alunoData.matricula}
                 />
+                <div className="flex gap-2">
+                  <Button type="button" variant="outline" onClick={() => setAlunoData({ ...alunoData, matricula: generateRegistration(alunoData.turma) })} className="cursor-pointer">
+                    Gerar matrícula
+                  </Button>
+                </div>
               </div>
             </div>
 
@@ -239,7 +245,11 @@ export function StudentEditForm({ studentId, onSuccess, onCancel }: StudentEditF
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="turma">Turma</Label>
-                <Select name="turma" defaultValue={alunoData.turma || "sem-turma"}>
+                <Select name="turma" defaultValue={alunoData.turma || "sem-turma"} onValueChange={(value) => {
+                  const next = { ...alunoData, turma: value }
+                  if (!next.matricula) next.matricula = generateRegistration(value)
+                  setAlunoData(next)
+                }}>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione a turma" />
                   </SelectTrigger>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { type AlunoResponse, studentsService } from "@/lib/students"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -20,6 +20,13 @@ export function StudentsTable({ students, onEdit, onDelete }: StudentsTableProps
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [classroomFilter, setClassroomFilter] = useState<string>("all")
+  const [enrollmentTypeByStudent, setEnrollmentTypeByStudent] = useState<Record<string, string>>({})
+
+  // TODO: Mudar para usar o estado do aluno
+  useEffect(() => {
+    const raw = localStorage.getItem('enrollmentTypeByStudent')
+    if (raw) setEnrollmentTypeByStudent(JSON.parse(raw))
+  }, [])
 
   const filteredStudents = students.filter((aluno) => {
     const matchesSearch = aluno.nome.toLowerCase().includes(searchTerm.toLowerCase())
@@ -50,6 +57,13 @@ export function StudentsTable({ students, onEdit, onDelete }: StudentsTableProps
         {ativo ? "Ativo" : "Inativo"}
       </Badge>
     )
+  }
+
+  const getEnrollmentBadge = (studentId: number) => {
+    const type = enrollmentTypeByStudent[studentId]
+    if (!type) return <Badge variant="outline">—</Badge>
+    const label = type === 'matricula' ? 'Matrícula' : type === 'prematricula' ? 'Pré-matrícula' : 'Rematrícula'
+    return <Badge variant="default">{label}</Badge>
   }
 
   const uniqueClassrooms = [...new Set(students.map((s) => s.turma).filter(Boolean))]
@@ -115,7 +129,8 @@ export function StudentsTable({ students, onEdit, onDelete }: StudentsTableProps
                 <TableHead>Matrícula</TableHead>
                 <TableHead>Turma</TableHead>
                 <TableHead>Gênero</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>Status do Cadastro</TableHead>
+                <TableHead>Status do Aluno</TableHead>
                 <TableHead>Renda Familiar</TableHead>
                 <TableHead>Comprovante de Residência</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
@@ -128,6 +143,7 @@ export function StudentsTable({ students, onEdit, onDelete }: StudentsTableProps
                   <TableCell>{aluno.matricula || "-"}</TableCell>
                   <TableCell>{aluno.turma || "-"}</TableCell>
                   <TableCell>{aluno.genero === 'masc' ? 'Masculino' : 'Feminino'}</TableCell>
+                  <TableCell>{getEnrollmentBadge(aluno.id)}</TableCell>
                   <TableCell>{getStatusBadge(aluno.ativo ?? false)}</TableCell>
                   <TableCell>R$ {aluno.renda_familiar_mensal || "-"}</TableCell>
                   <TableCell>

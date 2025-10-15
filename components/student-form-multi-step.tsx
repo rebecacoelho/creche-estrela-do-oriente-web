@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ChevronLeft, ChevronRight } from "lucide-react"
+import { formatCpf, formatPhone, generateRegistration } from "@/utils/formatValues"
 
 interface StudentFormMultiStepProps {
   onSuccess: () => void
@@ -24,6 +25,35 @@ interface ResponsavelData {
   telefone: string
   email: string
   endereco: string
+  // TODO: Implementar campos adicionais (preparados, ainda não enviados)
+  hasn_mother?: boolean
+  hasn_father?: boolean
+  mae_nome?: string
+  mae_cpf?: string
+  mae_rg?: string
+  mae_celular?: string
+  mae_outro_contato?: string
+  mae_local_trabalho?: string
+  pai_nome?: string
+  pai_cpf?: string
+  pai_rg?: string
+  pai_celular?: string
+  pai_outro_contato?: string
+  pai_local_trabalho?: string
+  responsavel_principal_nome?: string
+  responsavel_principal_cpf?: string
+  responsavel_principal_rg?: string
+  responsavel_principal_celular?: string
+  responsavel_principal_outro_contato?: string
+  responsavel_principal_local_trabalho?: string
+  // Endereço detalhado
+  endereco_principal?: string
+  ponto_referencia?: string
+  bairro?: string
+  numero?: string
+  endereco_cpf?: string
+  uf?: string
+  telefone_residencial?: string
 }
 
 interface AlunoData {
@@ -34,6 +64,61 @@ interface AlunoData {
   turma?: string
   rendaFamiliarMensal?: string
   comprovanteFile?: File | null
+  // TODO: Implementar campos adicionais (preparados, ainda não enviados)
+  identidade?: string
+  corRaca?: string
+  temIrmaosNaCreche?: boolean
+  gemeos?: boolean
+  sus?: string
+  unidadeSaude?: string
+  problemasSaude?: string
+  restricaoAlimentar?: string
+  alergia?: string
+  mobilidadeReduzida?: 'temporaria' | 'permanente' | ''
+  deficienciasMultiplas?: string
+  educacaoEspecial?: string
+  classificacao?: string[]
+  documentos?: {
+    certidaoNascimento?: boolean
+    numeroMatricula?: string
+    municipioNascimento?: string
+    cartorioRegistro?: string
+    municipioRegistro?: string
+    cpf?: string
+    rg?: string
+    dataEmissao?: string
+    orgaoEmissor?: string
+  }
+  situacaoHabitacionalSanitaria?: {
+    casa?: 'propria' | 'cedida' | 'alugada' | ''
+    valorAluguel?: string
+    numComodos?: string
+    piso?: 'cimento' | 'lajota' | 'chao_batido' | ''
+    tipoMoradia?: 'tijolo' | 'taipa' | 'madeira' | ''
+    cobertura?: 'telha' | 'zinco' | 'palha' | ''
+    saneamento?: string
+    fossa?: boolean
+    cifon?: boolean
+    energiaEletrica?: boolean
+    aguaEncanada?: boolean
+    domicilioExtra?: string[]
+  }
+  composicaoFamiliar?: Array<{
+    nome: string
+    idade: string
+    parentesco: string
+    situacaoEscolar: string
+    situacaoEmprego: string
+    rendasBrutas: string
+  }>
+  rendaFamiliarTotal?: string
+  rendaPerCapita?: string
+  serieCursar?: string
+  anoCursar?: string
+  autorizadosRetirada?: Array<{ nome: string; parentesco: string; rg: string; telefone: string }>
+  dataMatriculaTipo?: 'matricula' | 'rematricula' | 'prematricula' | ''
+  statusAluno?: 'ativa' | 'inativa' | 'pre_matricula' | 'aguardando_rematricula' | ''
+  dataDesligamento?: string
 }
 
 export function StudentFormMultiStep({ onSuccess, onCancel }: StudentFormMultiStepProps) {
@@ -51,7 +136,9 @@ export function StudentFormMultiStep({ onSuccess, onCancel }: StudentFormMultiSt
     cpf: "",
     telefone: "",
     email: "",
-    endereco: ""
+    endereco: "",
+    hasn_mother: true,
+    hasn_father: true
   })
   
   const [alunoData, setAlunoData] = useState<AlunoData>({
@@ -61,7 +148,8 @@ export function StudentFormMultiStep({ onSuccess, onCancel }: StudentFormMultiSt
     genero: "masc",
     turma: "",
     rendaFamiliarMensal: "",
-    comprovanteFile: null
+    comprovanteFile: null,
+    dataMatriculaTipo: ''
   })
 
   const [createdResponsavel, setCreatedResponsavel] = useState<ResponsavelResponse | null>(null)
@@ -148,6 +236,7 @@ export function StudentFormMultiStep({ onSuccess, onCancel }: StudentFormMultiSt
       turma: (formData.get("turma") as string) || undefined,
       rendaFamiliarMensal: (formData.get("rendaFamiliarMensal") as string) || undefined,
       comprovanteFile: formData.get("comprovante") as File,
+      dataMatriculaTipo: (formData.get("dataMatriculaTipo") as 'matricula' | 'prematricula' | 'rematricula' | '') || ''
     }
 
     try {
@@ -157,7 +246,7 @@ export function StudentFormMultiStep({ onSuccess, onCancel }: StudentFormMultiSt
         return
       }
 
-        await alunosService.createWithFile({
+        const created = await alunosService.createWithFile({
           nome: data.nome,
           matricula: data.matricula || null,
           data_nascimento: data.dataNascimento,
@@ -168,7 +257,18 @@ export function StudentFormMultiStep({ onSuccess, onCancel }: StudentFormMultiSt
           ativo: true,
           comprovante_residencia_url: data.comprovanteFile,
         })
-      
+        // TODO: Mudar persistir localmente o objetivo do cadastro para exibição no dashboard
+        try {
+          const key = 'enrollmentTypeByStudent'
+          const current = JSON.parse(localStorage.getItem(key) || '{}')
+          if (created?.id && data.dataMatriculaTipo) {
+            current[created.id] = data.dataMatriculaTipo
+            localStorage.setItem(key, JSON.stringify(current))
+          }
+        } catch (_) {
+          // ignore storage errors
+        }
+
       setAlunoData(data)
       onSuccess()
     } catch (err) {
@@ -207,6 +307,9 @@ export function StudentFormMultiStep({ onSuccess, onCancel }: StudentFormMultiSt
             : "Etapa 2 de 2: Preencha os dados do aluno"
           }
         </CardDescription>
+        <div className="mt-3 text-sm text-muted-foreground">
+          Aviso: Alguns campos adicionais estão visíveis mas desabilitados. A integração com a API será implementada em breve; os dados desses campos ainda não são enviados.
+        </div>
         
         <div className="flex items-center space-x-2 mt-4">
           <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
@@ -288,7 +391,8 @@ export function StudentFormMultiStep({ onSuccess, onCancel }: StudentFormMultiSt
                         name="cpf" 
                         maxLength={14}
                         placeholder="000.000.000-00"
-                        defaultValue={responsavelData.cpf}
+                        value={responsavelData.cpf}
+                        onChange={(e) => setResponsavelData({ ...responsavelData, cpf: formatCpf(e.target.value) })}
                         required 
                       />
                     </div>
@@ -302,7 +406,8 @@ export function StudentFormMultiStep({ onSuccess, onCancel }: StudentFormMultiSt
                         name="telefone"
                         maxLength={20}
                         placeholder="(11) 99999-9999"
-                        defaultValue={responsavelData.telefone}
+                        value={responsavelData.telefone}
+                        onChange={(e) => setResponsavelData({ ...responsavelData, telefone: formatPhone(e.target.value) })}
                         required
                       />
                     </div>
@@ -327,6 +432,148 @@ export function StudentFormMultiStep({ onSuccess, onCancel }: StudentFormMultiSt
                       defaultValue={responsavelData.endereco}
                       required 
                     />
+                  </div>
+
+                  {/* TODO: Implementar campos adicionais: Responsáveis detalhados */}
+                  <div className="mt-6 space-y-4">
+                    <h4 className="text-sm font-medium text-muted-foreground">Campos adicionais (em breve)</h4>
+                    {!responsavelData.hasn_mother && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="md:col-span-2 text-sm font-medium text-muted-foreground">Dados da Mãe da criança</div>
+                        <div className="space-y-2">
+                          <Label>Mãe - Nome</Label>
+                          <Input disabled placeholder="Em breve" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Mãe - CPF</Label>
+                          <Input disabled placeholder="Em breve" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Mãe - RG</Label>
+                          <Input disabled placeholder="Em breve" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Mãe - Celular/WhatsApp</Label>
+                          <Input disabled placeholder="Em breve" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Mãe - Outro contato</Label>
+                          <Input disabled placeholder="Em breve" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Mãe - Local de trabalho</Label>
+                          <Input disabled placeholder="Em breve" />
+                        </div>
+                      </div>
+                    )}
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="hasn_mother"
+                          checked={!!responsavelData.hasn_mother}
+                          onCheckedChange={(checked) => setResponsavelData({ ...responsavelData, hasn_mother: !!checked })}
+                          className="cursor-pointer"
+                        />
+                        <Label htmlFor="hasn_mother">A criança não possui mãe</Label>
+                      </div>
+                    {!responsavelData.hasn_father && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="md:col-span-2 text-sm font-medium text-muted-foreground">Dados do Pai da criança</div>
+                        <div className="space-y-2">
+                          <Label>Pai - Nome</Label>
+                          <Input disabled placeholder="Em breve" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Pai - CPF</Label>
+                          <Input disabled placeholder="Em breve" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Pai - RG</Label>
+                          <Input disabled placeholder="Em breve" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Pai - Celular/WhatsApp</Label>
+                          <Input disabled placeholder="Em breve" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Pai - Outro contato</Label>
+                          <Input disabled placeholder="Em breve" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Pai - Local de trabalho</Label>
+                          <Input disabled placeholder="Em breve" />
+                        </div>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-6">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="hasn_father"
+                          checked={!!responsavelData.hasn_father}
+                          onCheckedChange={(checked) => setResponsavelData({ ...responsavelData, hasn_father: !!checked })}
+                          className="cursor-pointer"
+                        />
+                        <Label htmlFor="hasn_father">A criança não possui pai</Label>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Responsável Principal - Nome</Label>
+                        <Input disabled placeholder="Em breve" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Responsável Principal - CPF</Label>
+                        <Input disabled placeholder="Em breve" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Responsável Principal - RG</Label>
+                        <Input disabled placeholder="Em breve" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Responsável Principal - Celular/WhatsApp</Label>
+                        <Input disabled placeholder="Em breve" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Responsável Principal - Outro contato</Label>
+                        <Input disabled placeholder="Em breve" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Responsável Principal - Local de trabalho</Label>
+                        <Input disabled placeholder="Em breve" />
+                      </div>
+                    </div>
+
+                    {/* Endereço detalhado (desabilitado) */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Endereço principal</Label>
+                        <Input disabled placeholder="Em breve" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Ponto de referência</Label>
+                        <Input disabled placeholder="Em breve" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Bairro</Label>
+                        <Input disabled placeholder="Em breve" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Número</Label>
+                        <Input disabled placeholder="Em breve" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>CPF</Label>
+                        <Input disabled placeholder="Em breve" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>UF</Label>
+                        <Input disabled placeholder="Em breve" />
+                      </div>
+                      <div className="space-y-2 md:col-span-2">
+                        <Label>Telefone Residencial</Label>
+                        <Input disabled placeholder="Em breve" />
+                      </div>
+                    </div>
                   </div>
                 </>
               )}
@@ -372,6 +619,11 @@ export function StudentFormMultiStep({ onSuccess, onCancel }: StudentFormMultiSt
                     value={alunoData.matricula}
                     onChange={(e) => setAlunoData({ ...alunoData, matricula: e.target.value })}
                   />
+                  <div className="flex gap-2">
+                    <Button type="button" variant="outline" onClick={() => setAlunoData({ ...alunoData, matricula: generateRegistration(alunoData.turma) })} className="cursor-pointer">
+                      Gerar matrícula
+                    </Button>
+                  </div>
                 </div>
               </div>
 
@@ -412,13 +664,19 @@ export function StudentFormMultiStep({ onSuccess, onCancel }: StudentFormMultiSt
                   <Select 
                     name="turma" 
                     value={alunoData.turma} 
-                    onValueChange={(value) => setAlunoData({ ...alunoData, turma: value })}
+                    onValueChange={(value) => {
+                      const next = { ...alunoData, turma: value }
+                      if (!next.matricula) {
+                        next.matricula = generateRegistration(value)
+                      }
+                      setAlunoData(next)
+                    }}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione a turma" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Infantil A">Infantil A</SelectItem>
+                      <SelectItem defaultChecked value="Infantil A">Infantil A</SelectItem>
                       <SelectItem value="Infantil B">Infantil B</SelectItem>
                       <SelectItem value="Maternal A">Maternal A</SelectItem>
                       <SelectItem value="Maternal B">Maternal B</SelectItem>
@@ -441,6 +699,27 @@ export function StudentFormMultiStep({ onSuccess, onCancel }: StudentFormMultiSt
                 </div>
               </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="dataMatriculaTipo">Objetivo do cadastro *</Label>
+                  <Select 
+                    name="dataMatriculaTipo" 
+                    value={alunoData.dataMatriculaTipo || ''} 
+                    onValueChange={(value: 'matricula' | 'prematricula' | 'rematricula') => setAlunoData({ ...alunoData, dataMatriculaTipo: value })}
+                    required
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o objetivo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="matricula">Matrícula</SelectItem>
+                      <SelectItem value="prematricula">Pré-matrícula</SelectItem>
+                      <SelectItem value="rematricula">Rematrícula</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="comprovante">Comprovante de Residência *</Label>
                 <Input 
@@ -451,6 +730,222 @@ export function StudentFormMultiStep({ onSuccess, onCancel }: StudentFormMultiSt
                   onChange={(e) => setAlunoData({ ...alunoData, comprovanteFile: e.target.files?.[0] || null })}
                   required 
                 />
+              </div>
+
+              {/* TODO: Implementar campos adicionais: Aluno */}
+              <div className="mt-6 space-y-4">
+                <h4 className="text-sm font-medium text-muted-foreground">Campos adicionais do aluno (em breve)</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Identidade (CPF/RG)</Label>
+                    <Input disabled placeholder="Em breve" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Cor/Raça</Label>
+                    <Input disabled placeholder="Em breve" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Tem irmãos na creche?</Label>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox disabled id="tem_irmaos" />
+                      <Label htmlFor="tem_irmaos" className="text-sm text-muted-foreground">Em breve</Label>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Gêmeos?</Label>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox disabled id="gemeos" />
+                      <Label htmlFor="gemeos" className="text-sm text-muted-foreground">Em breve</Label>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Cadastro SUS</Label>
+                    <Input disabled placeholder="Em breve" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Unidade de Saúde</Label>
+                    <Input disabled placeholder="Em breve" />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label>Problemas de Saúde</Label>
+                    <Input disabled placeholder="Em breve" />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label>Restrição Alimentar (qual?)</Label>
+                    <Input disabled placeholder="Em breve" />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label>Alergia (qual?)</Label>
+                    <Input disabled placeholder="Em breve" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Mobilidade Reduzida</Label>
+                    <Input disabled placeholder="Temporária ou Permanente (em breve)" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Possui Deficiências Múltiplas? (qual?)</Label>
+                    <Input disabled placeholder="Em breve" />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label>Público Alvo de Educação Especial? (qual?)</Label>
+                    <Input disabled placeholder="Em breve" />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label>Classificação</Label>
+                    <Input disabled placeholder="Lista de itens predefinidos (em breve)" />
+                  </div>
+                </div>
+
+                <h5 className="text-sm font-medium text-muted-foreground mt-4">Documentos da Criança</h5>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Certidão de Nascimento</Label>
+                    <Input disabled placeholder="Em breve" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Número da matrícula</Label>
+                    <Input disabled placeholder="Em breve" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Município de Nascimento</Label>
+                    <Input disabled placeholder="Em breve" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Cartório de Registro</Label>
+                    <Input disabled placeholder="Em breve" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Município de Registro</Label>
+                    <Input disabled placeholder="Em breve" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>CPF</Label>
+                    <Input disabled placeholder="Em breve" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>RG</Label>
+                    <Input disabled placeholder="Em breve" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Data de Emissão</Label>
+                    <Input disabled placeholder="Em breve" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Órgão Emissor</Label>
+                    <Input disabled placeholder="Em breve" />
+                  </div>
+                </div>
+
+                <h5 className="text-sm font-medium text-muted-foreground mt-4">Situação Habitacional e Sanitária</h5>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Casa (Própria/Cedida/Alugada)</Label>
+                    <Input disabled placeholder="Em breve" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Valor do Aluguel</Label>
+                    <Input disabled placeholder="Em breve" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Número de cômodos</Label>
+                    <Input disabled placeholder="Em breve" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Piso (cimento/lajota/chão batido)</Label>
+                    <Input disabled placeholder="Em breve" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Tipo de Moradia</Label>
+                    <Input disabled placeholder="Tijolo/Taipa/Madeira (em breve)" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Cobertura</Label>
+                    <Input disabled placeholder="Telha/Zinco/Palha (em breve)" />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label>Saneamento</Label>
+                    <Input disabled placeholder="Em breve" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Fossa</Label>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox disabled id="fossa" />
+                      <Label htmlFor="fossa" className="text-sm text-muted-foreground">Em breve</Label>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Cifon</Label>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox disabled id="cifon" />
+                      <Label htmlFor="cifon" className="text-sm text-muted-foreground">Em breve</Label>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Energia elétrica</Label>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox disabled id="energia_eletrica" />
+                      <Label htmlFor="energia_eletrica" className="text-sm text-muted-foreground">Em breve</Label>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Água encanada</Label>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox disabled id="agua_encanada" />
+                      <Label htmlFor="agua_encanada" className="text-sm text-muted-foreground">Em breve</Label>
+                    </div>
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label>Domicílio Extra</Label>
+                    <Input disabled placeholder="Array de itens (em breve)" />
+                  </div>
+                </div>
+
+                <h5 className="text-sm font-medium text-muted-foreground mt-4">Composição Familiar</h5>
+                <div className="space-y-2">
+                  <Input disabled placeholder="Array de pessoas (em breve)" />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  <div className="space-y-2">
+                    <Label>Renda familiar total</Label>
+                    <Input disabled placeholder="Em breve" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Renda per capita</Label>
+                    <Input disabled placeholder="Em breve" />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  <div className="space-y-2">
+                    <Label>Série que irá cursar</Label>
+                    <Input disabled placeholder="Em breve" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Ano que irá cursar</Label>
+                    <Input disabled placeholder="Em breve" />
+                  </div>
+                </div>
+
+                <h5 className="text-sm font-medium text-muted-foreground mt-4">Pessoas autorizadas a retirar</h5>
+                <div className="space-y-2">
+                  <Input disabled placeholder="Array de pessoas (em breve)" />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  <div className="space-y-2">
+                    <Label>Data (matrícula/rematrícula/pré-matrícula)</Label>
+                    <Input disabled placeholder="Em breve" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Status do aluno</Label>
+                    <Input disabled placeholder="Ativa/Inativa/Pré/Rematrícula (em breve)" />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label>Data de desligamento (se houver)</Label>
+                    <Input disabled placeholder="Em breve" />
+                  </div>
+                </div>
               </div>
             </div>
 

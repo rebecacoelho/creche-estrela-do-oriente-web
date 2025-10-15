@@ -148,6 +148,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshToken = useCallback(async (): Promise<boolean> => {
     if (!tokens?.refresh) {
+      logout()
       return false
     }
 
@@ -186,12 +187,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const payload = JSON.parse(atob(tokens.access.split('.')[1]))
         const currentTime = Date.now() / 1000
         const timeUntilExpiry = payload.exp - currentTime
-
-        if (timeUntilExpiry < 300) { 
+        
+        if (timeUntilExpiry <= 0) {
+          logout()
+        } else if (timeUntilExpiry < 300) { 
           refreshToken()
         }
       } catch (error) {
         console.error("Erro ao verificar expiração do token:", error)
+        logout()
       }
     }
 
@@ -220,6 +224,21 @@ export async function makeAuthenticatedRequest(
 ): Promise<Response> {
   if (!tokens?.access) {
     throw new Error("Token de acesso não disponível")
+  }
+
+  try {
+    const payload = JSON.parse(atob(tokens.access.split('.')[1]))
+    const currentTime = Date.now() / 1000
+    const timeUntilExpiry = payload.exp - currentTime
+    
+    if (timeUntilExpiry <= 0) {
+      const refreshSuccess = await refreshTokenFn()
+      if (!refreshSuccess) {
+        throw new Error("Token expirado e não foi possível renovar")
+      }
+    }
+  } catch (error) {
+    throw new Error("Token inválido")
   }
 
   const isFormData = options.body instanceof FormData
