@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Download, Edit, Trash2, Search, Filter } from "lucide-react"
+import { StudentDetailsDialog } from "@/components/student-details-dialog"
+import { Download, Edit, Trash2, Search, Filter, Eye } from "lucide-react"
 
 interface StudentsTableProps {
   students: AlunoResponse[]
@@ -21,6 +22,8 @@ export function StudentsTable({ students, onEdit, onDelete }: StudentsTableProps
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [classroomFilter, setClassroomFilter] = useState<string>("all")
   const [enrollmentTypeByStudent, setEnrollmentTypeByStudent] = useState<Record<string, string>>({})
+  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null)
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false)
 
   // TODO: Mudar para usar o estado do aluno
   useEffect(() => {
@@ -68,8 +71,19 @@ export function StudentsTable({ students, onEdit, onDelete }: StudentsTableProps
 
   const uniqueClassrooms = [...new Set(students.map((s) => s.turma).filter(Boolean))]
 
+  const handleViewDetails = (studentId: number) => {
+    setSelectedStudentId(studentId.toString())
+    setShowDetailsDialog(true)
+  }
+
   return (
-    <Card>
+    <>
+      <StudentDetailsDialog 
+        studentId={selectedStudentId}
+        open={showDetailsDialog}
+        onOpenChange={setShowDetailsDialog}
+      />
+      <Card>
       <CardHeader>
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
@@ -160,10 +174,13 @@ export function StudentsTable({ students, onEdit, onDelete }: StudentsTableProps
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      <Button variant="outline" size="sm" onClick={() => onEdit(aluno)} className="cursor-pointer">
+                      <Button variant="outline" size="sm" onClick={() => handleViewDetails(aluno.id)} className="cursor-pointer" title="Ver detalhes">
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => onEdit(aluno)} className="cursor-pointer" title="Editar">
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button variant="outline" size="sm" onClick={() => onDelete(aluno.id.toString())} className="cursor-pointer">
+                      <Button variant="outline" size="sm" onClick={() => onDelete(aluno.id.toString())} className="cursor-pointer" title="Excluir">
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
@@ -182,5 +199,6 @@ export function StudentsTable({ students, onEdit, onDelete }: StudentsTableProps
         </div>
       </CardContent>
     </Card>
+    </>
   )
 }

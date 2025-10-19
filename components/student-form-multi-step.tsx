@@ -137,8 +137,8 @@ export function StudentFormMultiStep({ onSuccess, onCancel }: StudentFormMultiSt
     telefone: "",
     email: "",
     endereco: "",
-    hasn_mother: true,
-    hasn_father: true
+    hasn_mother: false,
+    hasn_father: false
   })
   
   const [alunoData, setAlunoData] = useState<AlunoData>({
