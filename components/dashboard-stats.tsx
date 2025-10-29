@@ -10,8 +10,8 @@ interface DashboardStatsProps {
 
 export function DashboardStats({ students }: DashboardStatsProps) {
   const totalStudents = students.length
-  const activeStudents = students.filter((s) => s.ativo).length
-  const inactiveStudents = students.filter((s) => !s.ativo).length
+  const matriculados = students.filter((s) => s.ativo).length
+  const preMatricula = students.filter((s) => !s.ativo).length
   const withTurma = students.filter((s) => s.turma).length
 
   const stats = [
@@ -23,25 +23,25 @@ export function DashboardStats({ students }: DashboardStatsProps) {
       color: "text-blue-600",
     },
     {
-      title: "Alunos Ativos",
-      value: activeStudents,
-      description: "Frequentando atualmente",
+      title: "Matriculados",
+      value: matriculados,
+      description: "Com matrícula ativa",
       icon: UserCheck,
       color: "text-green-600",
     },
     {
-      title: "Alunos Inativos",
-      value: inactiveStudents,
-      description: "Não frequentando",
+      title: "Pré-Matrícula",
+      value: preMatricula,
+      description: "Em processo de matrícula",
       icon: UserX,
-      color: "text-red-600",
+      color: "text-yellow-600",
     },
     {
       title: "Com Turma",
       value: withTurma,
       description: "Alunos com turma definida",
       icon: Clock,
-      color: "text-yellow-600",
+      color: "text-purple-600",
     }
   ]
 

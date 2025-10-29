@@ -165,7 +165,7 @@ export function DashboardPage() {
                 <p className="text-muted-foreground">Carregando alunos...</p>
               </div>
             ) : (
-              <StudentsTable students={students} onEdit={handleEdit} onDelete={handleDelete} />
+              <StudentsTable students={students} onEdit={handleEdit} onDelete={handleDelete} onRefresh={loadStudents} />
             )}
           </div>
         )}

@@ -15,27 +15,21 @@ interface StudentsTableProps {
   students: AlunoResponse[]
   onEdit: (aluno: AlunoResponse) => void
   onDelete: (id: string) => void
+  onRefresh?: () => void
 }
 
-export function StudentsTable({ students, onEdit, onDelete }: StudentsTableProps) {
+export function StudentsTable({ students, onEdit, onDelete, onRefresh }: StudentsTableProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [classroomFilter, setClassroomFilter] = useState<string>("all")
-  const [enrollmentTypeByStudent, setEnrollmentTypeByStudent] = useState<Record<string, string>>({})
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null)
   const [showDetailsDialog, setShowDetailsDialog] = useState(false)
-
-  // TODO: Mudar para usar o estado do aluno
-  useEffect(() => {
-    const raw = localStorage.getItem('enrollmentTypeByStudent')
-    if (raw) setEnrollmentTypeByStudent(JSON.parse(raw))
-  }, [])
 
   const filteredStudents = students.filter((aluno) => {
     const matchesSearch = aluno.nome.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesStatus = statusFilter === "all" || 
-      (statusFilter === "active" && aluno.ativo) ||
-      (statusFilter === "inactive" && !aluno.ativo)
+      (statusFilter === "matriculado" && aluno.ativo) ||
+      (statusFilter === "pre_matricula" && !aluno.ativo)
     const matchesClassroom = classroomFilter === "all" || aluno.turma === classroomFilter
 
     return matchesSearch && matchesStatus && matchesClassroom
@@ -56,17 +50,10 @@ export function StudentsTable({ students, onEdit, onDelete }: StudentsTableProps
 
   const getStatusBadge = (ativo: boolean) => {
     return (
-      <Badge variant={ativo ? "default" : "secondary"}>
-        {ativo ? "Ativo" : "Inativo"}
+      <Badge variant={ativo ? "default" : "outline"}>
+        {ativo ? "Matriculado" : "Pré-Matrícula"}
       </Badge>
     )
-  }
-
-  const getEnrollmentBadge = (studentId: number) => {
-    const type = enrollmentTypeByStudent[studentId]
-    if (!type) return <Badge variant="outline">—</Badge>
-    const label = type === 'matricula' ? 'Matrícula' : type === 'prematricula' ? 'Pré-matrícula' : 'Rematrícula'
-    return <Badge variant="default">{label}</Badge>
   }
 
   const uniqueClassrooms = [...new Set(students.map((s) => s.turma).filter(Boolean))]
@@ -82,6 +69,7 @@ export function StudentsTable({ students, onEdit, onDelete }: StudentsTableProps
         studentId={selectedStudentId}
         open={showDetailsDialog}
         onOpenChange={setShowDetailsDialog}
+        onUpdate={onRefresh}
       />
       <Card>
       <CardHeader>
@@ -116,8 +104,8 @@ export function StudentsTable({ students, onEdit, onDelete }: StudentsTableProps
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos os status</SelectItem>
-              <SelectItem value="active">Ativo</SelectItem>
-              <SelectItem value="inactive">Inativo</SelectItem>
+              <SelectItem value="matriculado">Matriculado</SelectItem>
+              <SelectItem value="pre_matricula">Pré-Matrícula</SelectItem>
             </SelectContent>
           </Select>
           <Select value={classroomFilter} onValueChange={setClassroomFilter}>
@@ -143,8 +131,7 @@ export function StudentsTable({ students, onEdit, onDelete }: StudentsTableProps
                 <TableHead>Matrícula</TableHead>
                 <TableHead>Turma</TableHead>
                 <TableHead>Gênero</TableHead>
-                <TableHead>Status do Cadastro</TableHead>
-                <TableHead>Status do Aluno</TableHead>
+                <TableHead>Status de Matrícula</TableHead>
                 <TableHead>Renda Familiar</TableHead>
                 <TableHead>Comprovante de Residência</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
@@ -157,7 +144,6 @@ export function StudentsTable({ students, onEdit, onDelete }: StudentsTableProps
                   <TableCell>{aluno.matricula || "-"}</TableCell>
                   <TableCell>{aluno.turma || "-"}</TableCell>
                   <TableCell>{aluno.genero === 'masc' ? 'Masculino' : 'Feminino'}</TableCell>
-                  <TableCell>{getEnrollmentBadge(aluno.id)}</TableCell>
                   <TableCell>{getStatusBadge(aluno.ativo ?? false)}</TableCell>
                   <TableCell>R$ {aluno.renda_familiar_mensal || "-"}</TableCell>
                   <TableCell>
@@ -189,7 +175,7 @@ export function StudentsTable({ students, onEdit, onDelete }: StudentsTableProps
               ))}
               {filteredStudents.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                     Nenhum aluno encontrado
                   </TableCell>
                 </TableRow>

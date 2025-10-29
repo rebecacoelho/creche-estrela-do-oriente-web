@@ -112,22 +112,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         const loginSuccess = await login(email, password)
 
-        if (loginSuccess) {
-          const tokensStored = localStorage.getItem("daycare_tokens")
-          const tokenToUse = JSON.parse(tokensStored || "{}")
-
-          await fetch(`${API_BASE_URL}/diretores/`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${tokenToUse?.access}`,
-            },
-            body: JSON.stringify({
-              user: data.id,
-            }),
-          })
-        }
-
         setIsLoading(false)
         return { success: loginSuccess }
       } else {
