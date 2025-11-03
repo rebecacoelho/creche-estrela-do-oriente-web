@@ -105,9 +105,6 @@ export function StudentFormMultiStep({ onSuccess, onCancel }: StudentFormMultiSt
   const [alunoAnoCursar, setAlunoAnoCursar] = useState("")
   const [alunoRendaFamiliarMensal, setAlunoRendaFamiliarMensal] = useState("")
   
-  const [comprovanteFile, setComprovanteFile] = useState<File | null>(null)
-  const [certidaoFile, setCertidaoFile] = useState<File | null>(null)
-  
   const [documentos, setDocumentos] = useState<DocumentosAluno>({
     certidao_nascimento_matricula: "",
     municipio_nascimento: "",
@@ -251,14 +248,8 @@ export function StudentFormMultiStep({ onSuccess, onCancel }: StudentFormMultiSt
       return
     }
 
-    if (!comprovanteFile) {
-      setError("Por favor, selecione o comprovante de residência.")
-      setIsLoading(false)
-      return
-    }
-
     try {
-      const alunoData: AlunoFormData = {
+      const alunoData: Aluno = {
         nome: alunoNome,
         matricula: alunoMatricula || null,
         data_nascimento: alunoDataNascimento,
@@ -267,8 +258,9 @@ export function StudentFormMultiStep({ onSuccess, onCancel }: StudentFormMultiSt
         responsaveis: [createdResponsavel.id],
         turma: alunoTurma || null,
         renda_familiar_mensal: alunoRendaFamiliarMensal ? parseFloat(alunoRendaFamiliarMensal) : null,
-        ativo: true,
-        comprovante_residencia_url: comprovanteFile,
+        ativo: false, // Define como inativo (pré-matrícula)
+        status_matricula: 'pre_matricula', // Define status como pré-matrícula
+        comprovante_residencia_url: null, // Arquivo será anexado depois
         
         cadastro_nacional_de_saude: alunoSus,
         unidade_de_saude: alunoUnidadeSaude,
@@ -286,7 +278,7 @@ export function StudentFormMultiStep({ onSuccess, onCancel }: StudentFormMultiSt
         classificacoes: alunoClassificacoes.length > 0 ? alunoClassificacoes : undefined,
         serie_cursar: alunoSerieCursar || null,
         ano_cursar: alunoAnoCursar || null,
-        certidao_nascimento: certidaoFile,
+        certidao_nascimento: null, // Arquivo será anexado depois
         
         endereco,
         documentosaluno: documentos,
@@ -296,7 +288,7 @@ export function StudentFormMultiStep({ onSuccess, onCancel }: StudentFormMultiSt
         autorizados_retirada: autorizadosRetirada
       }
 
-      await alunosService.createWithFile(alunoData)
+      await alunosService.create(alunoData)
       onSuccess()
     } catch (err) {
       console.error("Erro ao cadastrar aluno:", err)
@@ -415,9 +407,6 @@ export function StudentFormMultiStep({ onSuccess, onCancel }: StudentFormMultiSt
               }`}>
                 {i + 1}
               </div>
-              {i < totalSteps - 1 && (
-                <div className={`flex-1 h-1 ${currentStep > i + 1 ? 'bg-blue-500' : 'bg-gray-200'}`} />
-              )}
             </div>
           ))}
         </div>
@@ -758,17 +747,6 @@ export function StudentFormMultiStep({ onSuccess, onCancel }: StudentFormMultiSt
                   placeholder="0.00"
                 />
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="comprovante">Comprovante de Residência *</Label>
-                <Input 
-                  id="comprovante" 
-                  type="file" 
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  onChange={(e) => setComprovanteFile(e.target.files?.[0] || null)}
-                  required 
-                />
-              </div>
             </div>
 
             {error && (
@@ -841,16 +819,6 @@ export function StudentFormMultiStep({ onSuccess, onCancel }: StudentFormMultiSt
                     required 
                   />
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="certidao_file">Arquivo da Certidão (PDF/Imagem)</Label>
-                <Input 
-                  id="certidao_file" 
-                  type="file" 
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  onChange={(e) => setCertidaoFile(e.target.files?.[0] || null)}
-                />
               </div>
 
               <h3 className="text-lg font-semibold mt-6">Documentos de Identidade</h3>

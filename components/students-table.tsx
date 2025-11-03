@@ -9,7 +9,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { StudentDetailsDialog } from "@/components/student-details-dialog"
-import { Download, Edit, Trash2, Search, Filter, Eye } from "lucide-react"
+import { FileUploadDialog } from "@/components/file-upload-dialog"
+import { Download, Edit, Trash2, Search, Filter, Eye, FileUp, FileText } from "lucide-react"
 
 interface StudentsTableProps {
   students: AlunoResponse[]
@@ -24,6 +25,10 @@ export function StudentsTable({ students, onEdit, onDelete, onRefresh }: Student
   const [classroomFilter, setClassroomFilter] = useState<string>("all")
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null)
   const [showDetailsDialog, setShowDetailsDialog] = useState(false)
+  const [showComprovanteDialog, setShowComprovanteDialog] = useState(false)
+  const [showCertidaoDialog, setShowCertidaoDialog] = useState(false)
+  const [uploadStudentId, setUploadStudentId] = useState<string | null>(null)
+  const [uploadStudentName, setUploadStudentName] = useState<string>("")
 
   const filteredStudents = students.filter((aluno) => {
     const matchesSearch = aluno.nome.toLowerCase().includes(searchTerm.toLowerCase())
@@ -63,6 +68,22 @@ export function StudentsTable({ students, onEdit, onDelete, onRefresh }: Student
     setShowDetailsDialog(true)
   }
 
+  const handleUploadComprovante = (aluno: AlunoResponse) => {
+    setUploadStudentId(aluno.id.toString())
+    setUploadStudentName(aluno.nome)
+    setShowComprovanteDialog(true)
+  }
+
+  const handleUploadCertidao = (aluno: AlunoResponse) => {
+    setUploadStudentId(aluno.id.toString())
+    setUploadStudentName(aluno.nome)
+    setShowCertidaoDialog(true)
+  }
+
+  const handleUploadSuccess = () => {
+    if (onRefresh) onRefresh()
+  }
+
   return (
     <>
       <StudentDetailsDialog 
@@ -71,6 +92,28 @@ export function StudentsTable({ students, onEdit, onDelete, onRefresh }: Student
         onOpenChange={setShowDetailsDialog}
         onUpdate={onRefresh}
       />
+      
+      {uploadStudentId && (
+        <>
+          <FileUploadDialog
+            studentId={uploadStudentId}
+            studentName={uploadStudentName}
+            fileType="comprovante"
+            open={showComprovanteDialog}
+            onOpenChange={setShowComprovanteDialog}
+            onSuccess={handleUploadSuccess}
+          />
+          <FileUploadDialog
+            studentId={uploadStudentId}
+            studentName={uploadStudentName}
+            fileType="certidao"
+            open={showCertidaoDialog}
+            onOpenChange={setShowCertidaoDialog}
+            onSuccess={handleUploadSuccess}
+          />
+        </>
+      )}
+      
       <Card>
       <CardHeader>
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -130,10 +173,8 @@ export function StudentsTable({ students, onEdit, onDelete, onRefresh }: Student
                 <TableHead>Nome</TableHead>
                 <TableHead>Matrícula</TableHead>
                 <TableHead>Turma</TableHead>
-                <TableHead>Gênero</TableHead>
                 <TableHead>Status de Matrícula</TableHead>
-                <TableHead>Renda Familiar</TableHead>
-                <TableHead>Comprovante de Residência</TableHead>
+                <TableHead>Documentos</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -143,25 +184,57 @@ export function StudentsTable({ students, onEdit, onDelete, onRefresh }: Student
                   <TableCell className="font-medium">{aluno.nome}</TableCell>
                   <TableCell>{aluno.matricula || "-"}</TableCell>
                   <TableCell>{aluno.turma || "-"}</TableCell>
-                  <TableCell>{aluno.genero === 'masc' ? 'Masculino' : 'Feminino'}</TableCell>
                   <TableCell>{getStatusBadge(aluno.ativo ?? false)}</TableCell>
-                  <TableCell>R$ {aluno.renda_familiar_mensal || "-"}</TableCell>
                   <TableCell>
-                    {aluno.comprovante_residencia_url ? (
-                      <a 
-                        href={aluno.comprovante_residencia_url?.toString() || ""} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-blue-500 underline"
-                      >
-                        Ver comprovante
-                      </a>
-                    ) : "-"}
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2">
+                        {aluno.comprovante_residencia_url ? (
+                          <Badge variant="default" className="text-xs">
+                            <FileText className="h-3 w-3 mr-1" />
+                            Comprovante OK
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-xs">
+                            Comprovante pendente
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {aluno.certidao_nascimento ? (
+                          <Badge variant="default" className="text-xs">
+                            <FileText className="h-3 w-3 mr-1" />
+                            Certidão OK
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-xs">
+                            Certidão pendente
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
+                    <div className="flex justify-end gap-1 flex-wrap">
                       <Button variant="outline" size="sm" onClick={() => handleViewDetails(aluno.id)} className="cursor-pointer" title="Ver detalhes">
                         <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleUploadComprovante(aluno)} 
+                        className="cursor-pointer" 
+                        title="Upload Comprovante"
+                      >
+                        <FileUp className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleUploadCertidao(aluno)} 
+                        className="cursor-pointer" 
+                        title="Upload Certidão"
+                      >
+                        <FileText className="h-4 w-4" />
                       </Button>
                       <Button variant="outline" size="sm" onClick={() => onEdit(aluno)} className="cursor-pointer" title="Editar">
                         <Edit className="h-4 w-4" />
@@ -175,7 +248,7 @@ export function StudentsTable({ students, onEdit, onDelete, onRefresh }: Student
               ))}
               {filteredStudents.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                     Nenhum aluno encontrado
                   </TableCell>
                 </TableRow>

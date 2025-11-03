@@ -506,6 +506,62 @@ export const studentsService = {
     }
   },
 
+  uploadComprovanteResidencia: async (id: string, file: File): Promise<AlunoResponse | null> => {
+    if (!authenticatedRequestFn) {
+      console.error('Falha na Autenticação autenticada não configurada')
+      return null
+    }
+
+    try {
+      const formData = new FormData()
+      formData.append('comprovante_residencia_url', file)
+
+      const response = await authenticatedRequestFn(`https://estreladooriente-production.up.railway.app/api/alunos/${id}/`, {
+        method: 'PATCH',
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        console.error('Erro da API:', errorData)
+        throw new Error('Erro ao fazer upload do comprovante de residência.')
+      }
+
+      return response.json()
+    } catch (error) {
+      console.error('Erro ao fazer upload do comprovante de residência:', error)
+      return null
+    }
+  },
+
+  uploadCertidaoNascimento: async (id: string, file: File): Promise<AlunoResponse | null> => {
+    if (!authenticatedRequestFn) {
+      console.error('Falha na Autenticação autenticada não configurada')
+      return null
+    }
+
+    try {
+      const formData = new FormData()
+      formData.append('certidao_nascimento', file)
+
+      const response = await authenticatedRequestFn(`https://estreladooriente-production.up.railway.app/api/alunos/${id}/`, {
+        method: 'PATCH',
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        console.error('Erro da API:', errorData)
+        throw new Error('Erro ao fazer upload da certidão de nascimento.')
+      }
+
+      return response.json()
+    } catch (error) {
+      console.error('Erro ao fazer upload da certidão de nascimento:', error)
+      return null
+    }
+  },
+
   exportToCsv: (alunos: AlunoResponse[]): string => {
     const headers = [
       "ID",
