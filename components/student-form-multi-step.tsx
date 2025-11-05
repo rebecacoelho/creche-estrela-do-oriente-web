@@ -14,7 +14,8 @@ import {
   type BensDomicilio,
   type MembroFamiliar,
   type PessoaAutorizada,
-  type AlunoFormData
+  type AlunoFormData,
+  Aluno
 } from "@/lib/students"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -258,9 +259,9 @@ export function StudentFormMultiStep({ onSuccess, onCancel }: StudentFormMultiSt
         responsaveis: [createdResponsavel.id],
         turma: alunoTurma || null,
         renda_familiar_mensal: alunoRendaFamiliarMensal ? parseFloat(alunoRendaFamiliarMensal) : null,
-        ativo: false, // Define como inativo (pré-matrícula)
-        status_matricula: 'pre_matricula', // Define status como pré-matrícula
-        comprovante_residencia_url: null, // Arquivo será anexado depois
+        ativo: false, 
+        status_matricula: 'pre_matricula', 
+        comprovante_residencia_url: null, 
         
         cadastro_nacional_de_saude: alunoSus,
         unidade_de_saude: alunoUnidadeSaude,
@@ -278,7 +279,7 @@ export function StudentFormMultiStep({ onSuccess, onCancel }: StudentFormMultiSt
         classificacoes: alunoClassificacoes.length > 0 ? alunoClassificacoes : undefined,
         serie_cursar: alunoSerieCursar || null,
         ano_cursar: alunoAnoCursar || null,
-        certidao_nascimento: null, // Arquivo será anexado depois
+        certidao_nascimento: null, 
         
         endereco,
         documentosaluno: documentos,

@@ -131,20 +131,41 @@ export function DashboardPage() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {currentView === "dashboard" && (
           <div>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold">Dashboard</h2>
+            <div className="mb-8">
+              <h2 className="text-3xl font-bold text-gray-900 mb-2">Dashboard</h2>
+              <p className="text-gray-600">Visão geral dos alunos e estatísticas da creche</p>
             </div>
 
             {isLoading ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-                <p className="text-muted-foreground">Carregando dados...</p>
+              <div className="text-center py-20">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                <p className="text-muted-foreground text-lg">Carregando dados do dashboard...</p>
               </div>
             ) : (
-              <DashboardStats students={students} />
+              <>
+                <DashboardStats students={students} />
+                
+                {students.length === 0 && (
+                  <div className="text-center py-20 bg-muted/20 rounded-lg mt-8">
+                    <Users className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+                    <h3 className="text-xl font-semibold text-gray-700 mb-2">
+                      Nenhum aluno cadastrado
+                    </h3>
+                    <p className="text-muted-foreground mb-6">
+                      Comece cadastrando o primeiro aluno para visualizar as estatísticas
+                    </p>
+                    <Button 
+                      onClick={() => setCurrentView("students")} 
+                      className="cursor-pointer"
+                    >
+                      Ir para Gestão de Alunos
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}
