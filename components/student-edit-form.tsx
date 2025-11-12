@@ -296,7 +296,7 @@ export function StudentEditForm({ studentId, onSuccess, onCancel }: StudentEditF
                 name="ativo" 
                 defaultChecked={alunoData.ativo}
               />
-              <Label htmlFor="ativo">Aluno ativo</Label>
+              <Label htmlFor="ativo">Aluno Matriculado</Label>
             </div>
           </div>
 
